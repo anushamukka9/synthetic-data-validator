@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "synthetic-data-validator"
+version = "0.1.0"
+description = "Validate synthetic tabular datasets against real reference data: distribution similarity, correlation preservation, memorization detection, utility checks, and schema conformance."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Anusha Mukka", email = "anusha@anushamukka.com" },
+]
+maintainers = [
+    { name = "Anusha Mukka", email = "anusha@anushamukka.com" },
+]
+keywords = ["synthetic-data", "validation", "privacy", "data-quality", "statistics"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Intended Audience :: Science/Research",
+]
+dependencies = [
+    "numpy>=1.22",
+    "scipy>=1.9",
+]
+urls = { Homepage = "https://anushamukka.com", Repository = "https://github.com/anushamukka9/synthetic-data-validator" }
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+sdv-validate = "synthetic_data_validator.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
