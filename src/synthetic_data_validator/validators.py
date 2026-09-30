@@ -8,6 +8,9 @@ column of the synthetic data:
   columns or binned continuous columns).
 - ``total_variation_distance``: half the L1 distance between histograms of the
   two columns, a scale-free similarity measure in [0, 1].
+- ``wasserstein_distance``: first Wasserstein (earth-mover) distance between
+  the two columns, in the column's own units — complements the scale-free
+  TVD with an absolute sense of how far mass moved.
 - ``distribution_check``: runs the appropriate checks over every column of the
   datasets and aggregates pass/fail results.
 """
@@ -86,6 +89,20 @@ def total_variation_distance(real_col, synth_col, n_bins: int = 20) -> float:
     return float(0.5 * np.sum(np.abs(r_hist - s_hist) * widths))
 
 
+def wasserstein_distance(real_col, synth_col) -> float:
+    """First Wasserstein (earth-mover) distance between two columns.
+
+    Returns a non-negative value in the column's own units: 0 for identical
+    samples, growing as probability mass has to move further. Unlike TVD it
+    is sensitive to *how far* mass shifts, not just how much. Informational:
+    ``distribution_check`` reports it per column but does not gate on it.
+    """
+    r, s = _as_float(real_col), _as_float(synth_col)
+    if r.size == 0 or s.size == 0:
+        raise ValueError("wasserstein_distance requires non-empty columns")
+    return float(stats.wasserstein_distance(r, s))
+
+
 def distribution_check(
     real: np.ndarray,
     synth: np.ndarray,
@@ -98,6 +115,8 @@ def distribution_check(
     Continuous columns (more than 10 unique values) use the KS test; discrete
     columns use the chi-square test; every column also gets a total variation
     distance. A column passes if its p-value >= alpha AND its TVD <= max_tvd.
+    The Wasserstein distance is reported per column for diagnosis but does
+    not affect the gate.
     """
     real = np.asarray(real, dtype=float)
     synth = np.asarray(synth, dtype=float)
@@ -115,6 +134,7 @@ def distribution_check(
     for j, name in enumerate(names):
         r, s = _as_float(real[:, j]), _as_float(synth[:, j])
         tvd = total_variation_distance(r, s)
+        w_dist = wasserstein_distance(r, s)
         tvds.append(tvd)
         discrete = np.unique(r).size <= 10
         if discrete:
@@ -132,6 +152,7 @@ def distribution_check(
                 "statistic": round(stat, 4),
                 "p_value": round(float(p), 4),
                 "tvd": round(tvd, 4),
+                "wasserstein": round(w_dist, 4),
                 "passed": ok,
             }
         )
