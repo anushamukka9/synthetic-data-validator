@@ -5,7 +5,8 @@ train a model on synthetic data, ship a synthetic dataset, or claim a
 generative model preserves privacy, run it through this battery of checks:
 
 1. **Distribution similarity** — per-column KS / chi-square tests plus total
-   variation distance between histograms.
+   variation distance and Wasserstein distance between the real and
+   synthetic columns.
 2. **Correlation preservation** — does the synthetic data keep the
    relationships *between* columns (Frobenius/mean-abs difference of the
    correlation matrices)?
@@ -21,6 +22,10 @@ generative model preserves privacy, run it through this battery of checks:
 Every check produces a pass/fail gate and a 0–100 score; the report combines
 them into a weighted overall score. The CLI exits non-zero when any gate
 fails, so it works as a quality gate in CI.
+
+When a check fails, `column_stats_check` shows *where*: a ranked per-column
+drift table (standardized mean shift, std ratio, range overlap, missing-rate
+diff) pointing at the columns the generator most needs to fix.
 
 Author: [Anusha Mukka](https://anushamukka.com)
 
@@ -81,11 +86,12 @@ Exit code 0 = all gates passed, 1 = at least one gate failed.
 ```python
 from synthetic_data_validator import (
     validate,            # full battery -> ValidationReport
-    distribution_check,  # KS / chi-square / TVD per column
+    distribution_check,  # KS / chi-square / TVD / Wasserstein per column
     correlation_preservation,
     memorization_check,  # DCR ratio privacy proxy
     utility_check,        # train-on-synthetic-test-on-real
     schema_check,
+    column_stats_check,  # diagnostic: ranked per-column drift table
 )
 
 report = validate(real, synth, column_names=[...], target_idx=4,
@@ -94,6 +100,11 @@ report.passed          # bool: every gate passed
 report.overall_score   # weighted 0-100 score
 report.failed_checks() # names of failing checks
 report.to_markdown()   # or .to_json()
+
+# When a gate fails, find the offending columns:
+drift = column_stats_check(real, synth, column_names=[...])
+for row in drift.details["columns"][:3]:
+    print(row["column"], row["mean_shift"], row["std_ratio"])
 ```
 
 See [`docs/usage.md`](docs/usage.md) for a full guide: what each check
@@ -104,12 +115,16 @@ measures, how the gates are scored, and how to pick thresholds.
 ```
 src/synthetic_data_validator/
 ├── __init__.py      public API
+├── __main__.py      `python -m synthetic_data_validator` entry point
 ├── cli.py           sdv-validate entry point (CSV loading, thresholds, exit codes)
 ├── report.py        CheckResult / ValidationReport, validate() orchestration
-├── validators.py    ks_test, chi_square_test, total_variation_distance, distribution_check
+├── validators.py    ks_test, chi_square_test, total_variation_distance,
+│                    wasserstein_distance, distribution_check
 ├── correlation.py   correlation-matrix comparison
 ├── privacy.py       nearest-neighbor distance-ratio memorization check
 ├── schema.py        structural conformance
+├── summary.py       describe / column_drift / column_stats_check —
+│                    per-column descriptive statistics and drift ranking
 └── utility.py       NumPy logistic regression, train-on-synthetic-test-on-real
 ```
 
