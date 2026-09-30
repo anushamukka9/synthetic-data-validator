@@ -19,10 +19,19 @@ For each column:
 - Discrete columns: chi-square homogeneity test on shared quantile bins.
 - Every column also gets a total variation distance (TVD) between histograms,
   a scale-free number in [0, 1]; passes when TVD ≤ `max_tvd` (default 0.2).
+- Every column also gets a first Wasserstein (earth-mover) distance, in the
+  column's own units — informational only, not gated. TVD says *how much*
+  mass moved; Wasserstein says *how far* it moved.
 
 A column passes only if **both** its hypothesis test and its TVD gate pass.
 The check passes when every column passes; the score is the fraction of
 columns passing × 100.
+
+When this check fails, run `column_stats_check(real, synth)` to see *which*
+columns drifted: it ranks columns by standardized mean shift and reports
+std ratio, range overlap, and missing-rate differences per column, so the
+failure turns into a to-fix list. This diagnostic lives outside the default
+`validate()` battery on purpose — it is for debugging, not gating.
 
 ### 3. Correlation preservation (weight 0.20)
 
