@@ -10,23 +10,33 @@ from synthetic_data_validator.validators import (
     ks_test,
     chi_square_test,
     total_variation_distance,
+    wasserstein_distance,
     distribution_check,
 )
 from synthetic_data_validator.correlation import correlation_preservation
 from synthetic_data_validator.privacy import memorization_check
 from synthetic_data_validator.utility import utility_check
 from synthetic_data_validator.schema import schema_check
+from synthetic_data_validator.summary import (
+    describe,
+    column_drift,
+    column_stats_check,
+)
 from synthetic_data_validator.report import CheckResult, ValidationReport, validate
 
 __all__ = [
     "ks_test",
     "chi_square_test",
     "total_variation_distance",
+    "wasserstein_distance",
     "distribution_check",
     "correlation_preservation",
     "memorization_check",
     "utility_check",
     "schema_check",
+    "describe",
+    "column_drift",
+    "column_stats_check",
     "CheckResult",
     "ValidationReport",
     "validate",
